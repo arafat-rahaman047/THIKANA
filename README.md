@@ -36,11 +36,11 @@ The goal of THIKANA is to provide a secure, user-friendly, and efficient digital
 
 ### Full Stack Alchemists
 
-- Team Lead
-- Project Manager
-- Frontend Developers
-- Backend Developers
-- Database & System Management
+- Team Lead : Arafat Rahaman
+- Project Manager : Abdur Rahaman
+- QA Tester: Anusua Biswas Nidhi
+- Git Controller : Rauf Al Hasan Ruhan
+- Database & System Management : Rezoan Nafi
 
 ---
 
