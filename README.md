@@ -57,3 +57,9 @@ The goal of THIKANA is to provide a secure, user-friendly, and efficient digital
 ## 📄 License
 
 This project is developed for academic and educational purposes.
+---
+
+## About Project
+Project Proposal: https://docs.google.com/document/d/1LnmFcDqEnmZBlcfZCkH7ZsA5jTYvoa--/edit?usp=drive_link&ouid=110149240013376391948&rtpof=true&sd=true
+
+
