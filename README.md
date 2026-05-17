@@ -1,5 +1,11 @@
 # THIKANA
 ### Smart Real Estate & Rental Management Platform
+---
+
+## About Project
+Project Proposal: https://docs.google.com/document/d/1LnmFcDqEnmZBlcfZCkH7ZsA5jTYvoa--/edit?usp=drive_link&ouid=110149240013376391948&rtpof=true&sd=true
+
+---
 
 THIKANA is a modern real estate and rental management platform designed to simplify property searching, renting, buying, selling, and property management in Bangladesh. The platform connects tenants, property owners, and real estate agencies within a unified digital ecosystem.
 
@@ -57,9 +63,5 @@ The goal of THIKANA is to provide a secure, user-friendly, and efficient digital
 ## 📄 License
 
 This project is developed for academic and educational purposes.
----
-
-## About Project
-Project Proposal: https://docs.google.com/document/d/1LnmFcDqEnmZBlcfZCkH7ZsA5jTYvoa--/edit?usp=drive_link&ouid=110149240013376391948&rtpof=true&sd=true
 
 
