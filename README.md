@@ -3,7 +3,7 @@
 ---
 
 ## About Project
-Project Proposal: https://docs.google.com/document/d/1LnmFcDqEnmZBlcfZCkH7ZsA5jTYvoa--/edit?usp=drive_link&ouid=110149240013376391948&rtpof=true&sd=true
+Project Proposal: https://docs.google.com/document/d/18Z_3z4-3Cyz4YqBIBNevkH9q083KROSr/edit?usp=drive_link&ouid=110149240013376391948&rtpof=true&sd=true
 
 ---
 
