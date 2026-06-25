@@ -46,7 +46,7 @@ The goal of THIKANA is to provide a secure, user-friendly, and efficient digital
 
 - Frontend: HTML, CSS, JavaScript, React
 - Backend: Node.js / Express
-- Database: MongoDB / MySQL
+- Database: MySQL
 - Maps & Location Services
 - Git & GitHub for Version Control
 
