@@ -3,9 +3,6 @@
 ---
 
 ## About Project
-Project Proposal: https://docs.google.com/document/d/18Z_3z4-3Cyz4YqBIBNevkH9q083KROSr/edit?usp=drive_link&ouid=110149240013376391948&rtpof=true&sd=true <br><br>
-SRS Document: https://drive.google.com/file/d/1-yfqyEyU8EACl4WDLMG52MlJczY2l7VQ/view?usp=sharing
-
 ---
 
 THIKANA is a modern real estate and rental management platform designed to simplify property searching, renting, buying, selling, and property management in Bangladesh. The platform connects tenants, property owners, and real estate agencies within a unified digital ecosystem.
