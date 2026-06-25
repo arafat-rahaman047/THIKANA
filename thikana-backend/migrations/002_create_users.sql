@@ -1,0 +1,16 @@
+CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(191) UNIQUE NOT NULL,
+    phone VARCHAR(20) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role_id INT NOT NULL,
+    is_active TINYINT(1) DEFAULT 1,
+    is_verified TINYINT(1) DEFAULT 0,
+    refresh_token VARCHAR(255) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_phone ON users(phone);
