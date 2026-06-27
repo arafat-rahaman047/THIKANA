@@ -13,11 +13,13 @@ class VerificationRepository extends BaseRepository {
    */
   async findAllRequests() {
     const sql = `
-      SELECT uv.*, u.email, u.phone, up.full_name, u.role
-      FROM user_verifications uv
-      INNER JOIN users u ON uv.user_id = u.id
-      LEFT JOIN user_profiles up ON u.id = up.user_id
-      ORDER BY uv.created_at DESC
+    SELECT uv.*, u.email, u.phone, up.full_name, r.name as role
+    FROM user_verifications uv
+    INNER JOIN users u ON uv.user_id = u.id
+    INNER JOIN roles r ON u.role_id = r.id
+    LEFT JOIN user_profiles up ON u.id = up.user_id
+    WHERE uv.status = 'pending'
+    ORDER BY uv.created_at DESC
     `;
     return this.query(sql);
   }

@@ -16,8 +16,25 @@ class AuthService {
    * @param {Object} payload - Validated user & profile details
    */
   async register(payload) {
-    const { email, phone, password, role, fullName, nidNumber, address, bio } = payload;
+  const {
+    email,
+    phone,
+    password,
+    role,
+    fullName,
+    nidNumber,
+    address,
+    bio
+  } = payload;
 
+  // Extra safety guard in case this service is called without Joi middleware.
+  if ((role === 'tenant' || role === 'owner') && !nidNumber) {
+    throw new AppError('NID number is required for tenant and owner accounts', HTTP_STATUS.BAD_REQUEST);
+  }
+
+  if (!address) {
+    throw new AppError('Address is required', HTTP_STATUS.BAD_REQUEST);
+  }
     // 1. Check if email exists
     const existingEmail = await userRepository.findByEmailWithRole(email);
     if (existingEmail) {

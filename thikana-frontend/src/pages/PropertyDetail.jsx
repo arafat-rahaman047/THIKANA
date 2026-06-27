@@ -1,5 +1,6 @@
+import { getMediaUrl } from '../utils/mediaUrl';
 import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Bed, Bath, Maximize, MapPin, Heart, Share2, MessageSquare, AlertTriangle, 
@@ -117,8 +118,9 @@ const PropertyDetail = () => {
     onSuccess: (res) => {
       setShowChatModal(false);
       setChatMessage('');
+      const conversationId = res?.data?.conversationId;
       showNotification('Conversation started!', 'success');
-      navigate('/tenant?tab=messages');
+      navigate(conversationId ? `/tenant?tab=messages&chat=${conversationId}` : '/tenant?tab=messages');
     },
     onError: (err) => {
       showNotification(err.message || 'Failed to start chat', 'error');
@@ -169,10 +171,9 @@ const PropertyDetail = () => {
     maximumFractionDigits: 0
   }).format(property.price);
 
-  const images = property.media?.length > 0 
-    ? property.media.map(m => m.url.startsWith('http') ? m.url : `http://localhost:5000${m.url}`)
-    : ['https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=80'];
-
+const images = property.media?.length > 0
+  ? property.media.map(m => getMediaUrl(m.url))
+  : [getMediaUrl(null)];
   return (
     <div className="space-y-8 pb-12">
       {/* Breadcrumbs / Header Action */}
@@ -325,17 +326,31 @@ const PropertyDetail = () => {
           {/* Owner Details Card */}
           <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm text-center space-y-6">
             <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wide">Listed By</h3>
-            <div className="flex flex-col items-center">
-              <img 
-                src={`https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(property.owner_name || 'Owner')}`} 
-                alt={property.owner_name} 
-                className="w-20 h-20 rounded-full border-2 border-slate-100 object-cover shadow-sm mb-3"
-              />
-              <h4 className="text-lg font-extrabold text-slate-800">{property.owner_name || 'Landlord'}</h4>
-              <p className="text-xs text-slate-400 capitalize bg-slate-100 px-2 py-0.5 rounded-md font-semibold mt-1">
-                Property Owner
-              </p>
-            </div>
+            {property.owner_id ? (
+              <Link to={`/users/${property.owner_id}/profile`} className="flex flex-col items-center group">
+                <img 
+                  src={`https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(property.owner_name || 'Owner')}`} 
+                  alt={property.owner_name} 
+                  className="w-20 h-20 rounded-full border-2 border-slate-100 object-cover shadow-sm mb-3 group-hover:scale-105 transition-transform"
+                />
+                <h4 className="text-lg font-extrabold text-slate-800 group-hover:text-emerald-600 transition-colors">{property.owner_name || 'Landlord'}</h4>
+                <p className="text-xs text-slate-400 capitalize bg-slate-100 px-2 py-0.5 rounded-md font-semibold mt-1">
+                  Property Owner
+                </p>
+              </Link>
+            ) : (
+              <div className="flex flex-col items-center">
+                <img 
+                  src={`https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(property.owner_name || 'Owner')}`} 
+                  alt={property.owner_name} 
+                  className="w-20 h-20 rounded-full border-2 border-slate-100 object-cover shadow-sm mb-3"
+                />
+                <h4 className="text-lg font-extrabold text-slate-800">{property.owner_name || 'Landlord'}</h4>
+                <p className="text-xs text-slate-400 capitalize bg-slate-100 px-2 py-0.5 rounded-md font-semibold mt-1">
+                  Property Owner
+                </p>
+              </div>
+            )}
 
             {/* Action buttons */}
             <div className="flex flex-col gap-3 pt-2">
@@ -418,15 +433,31 @@ const PropertyDetail = () => {
               const revAvatar = rev.reviewer_avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(rev.reviewer_name || 'U')}`;
               return (
                 <div key={rev.review_id} className="pt-6 first:pt-0 flex gap-4">
-                  <img 
-                    src={revAvatar} 
-                    alt={rev.reviewer_name} 
-                    className="w-10 h-10 rounded-full border border-slate-100 object-cover shrink-0" 
-                  />
+                  {rev.reviewer_id ? (
+                    <Link to={`/users/${rev.reviewer_id}/profile`} className="shrink-0 group">
+                      <img 
+                        src={revAvatar} 
+                        alt={rev.reviewer_name} 
+                        className="w-10 h-10 rounded-full border border-slate-100 object-cover group-hover:opacity-85 transition-opacity" 
+                      />
+                    </Link>
+                  ) : (
+                    <img 
+                      src={revAvatar} 
+                      alt={rev.reviewer_name} 
+                      className="w-10 h-10 rounded-full border border-slate-100 object-cover shrink-0" 
+                    />
+                  )}
                   <div className="flex-1 space-y-1.5 min-w-0">
                     <div className="flex items-center justify-between gap-4">
                       <div>
-                        <h4 className="font-extrabold text-slate-800 text-sm truncate">{rev.reviewer_name}</h4>
+                        {rev.reviewer_id ? (
+                          <Link to={`/users/${rev.reviewer_id}/profile`} className="font-extrabold text-slate-800 text-sm hover:text-emerald-600 transition-colors truncate block">
+                            {rev.reviewer_name}
+                          </Link>
+                        ) : (
+                          <h4 className="font-extrabold text-slate-800 text-sm truncate">{rev.reviewer_name}</h4>
+                        )}
                         <div className="flex text-amber-400 mt-0.5">
                           {[...Array(5)].map((_, i) => (
                             <Star 

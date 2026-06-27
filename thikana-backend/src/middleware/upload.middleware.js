@@ -1,6 +1,7 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { HTTP_STATUS } = require('../configs/constants');
 
 const uploadDir = path.join(__dirname, '../../uploads');
 
@@ -20,23 +21,49 @@ const storage = multer.diskStorage({
   }
 });
 
-// File filter (images only)
-const fileFilter = (req, file, cb) => {
-  const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
-  if (allowedMimeTypes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error('Invalid file type. Only JPEG, JPG, PNG, WEBP and GIF are allowed.'), false);
-  }
+const imageMimeTypes = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'image/gif'
+];
+
+const verificationMimeTypes = [
+  ...imageMimeTypes,
+  'application/pdf'
+];
+
+const createFileFilter = (allowedMimeTypes, message) => {
+  return (req, file, cb) => {
+    if (allowedMimeTypes.includes(file.mimetype)) {
+      return cb(null, true);
+    }
+
+    const error = new Error(message);
+    error.statusCode = HTTP_STATUS.BAD_REQUEST;
+    return cb(error, false);
+  };
 };
 
-// Multer upload configurations
-const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
+const createUploader = (allowedMimeTypes, message) => multer({
+  storage,
+  fileFilter: createFileFilter(allowedMimeTypes, message),
   limits: {
     fileSize: 5 * 1024 * 1024 // 5MB max file size
   }
 });
 
-module.exports = upload;
+const imageUpload = createUploader(
+  imageMimeTypes,
+  'Invalid file type. Only JPEG, JPG, PNG, WEBP and GIF are allowed.'
+);
+
+const verificationUpload = createUploader(
+  verificationMimeTypes,
+  'Invalid file type. Only JPEG, JPG, PNG, WEBP, GIF and PDF are allowed.'
+);
+
+module.exports = imageUpload;
+module.exports.imageUpload = imageUpload;
+module.exports.verificationUpload = verificationUpload;

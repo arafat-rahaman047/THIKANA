@@ -1,6 +1,7 @@
+import { getMediaUrl } from '../../utils/mediaUrl';
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { 
   Users, Home, ShieldCheck, AlertTriangle, FileText, Activity,
   Check, X, Eye, Trash, Ban, CheckCircle, ShieldAlert 
@@ -12,6 +13,16 @@ import api from '../../services/api';
 
 import { adminGetReports, adminUpdateReportStatus } from '../../services/reportService';
 import { adminGetVerifications, adminApproveVerification, adminRejectVerification } from '../../services/verificationService';
+
+const VERIFICATION_DOCUMENT_LABELS = {
+  nid: 'National ID (NID)',
+  student_id: 'Student ID',
+  property_deed: 'Property Ownership Deed / Sale Deed',
+  mutation_certificate: 'Mutation Certificate / Khatian',
+  tax_receipt: 'Property Tax / Holding Tax Receipt',
+  utility_bill: 'Utility Bill for Property',
+  trade_license: 'Agency Trade License'
+};
 
 const AdminDashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -135,7 +146,15 @@ const AdminDashboard = () => {
     { id: 'audit', label: 'System Audit Logs', icon: FileText }
   ];
 
-  const stats = statsRes?.data || { users: 0, properties: 0, activeProperties: 0, pendingVerifications: 0, reports: 0, conversations: 0 };
+  const rawStats = statsRes?.data || {};
+  const stats = {
+  users: rawStats.totalUsers || 0,
+  properties: rawStats.totalProperties || 0,
+  activeProperties: rawStats.activeProperties || 0,
+  pendingVerifications: rawStats.pendingVerifications || 0,
+  reports: rawStats.pendingReports || 0,
+  conversations: rawStats.totalConversations || 0
+  };
 
   return (
     <DashboardLayout
@@ -187,13 +206,31 @@ const AdminDashboard = () => {
             <div className="space-y-4">
               {propertiesRes.data.map((prop) => (
                 <div key={prop.id} className="bg-white border rounded-2xl p-6 shadow-sm flex justify-between items-center gap-6">
-                  <div>
-                    <h3 className="font-bold text-slate-800">{prop.title}</h3>
-                    <p className="text-xs text-slate-400">{prop.address}, {prop.city}</p>
-                    <p className="text-sm font-semibold text-emerald-600 mt-1">{prop.price} BDT</p>
-                    <p className="text-xs text-slate-400 mt-2">Owner: {prop.owner_name} (ID: {prop.owner_id})</p>
-                  </div>
-                  <div className="flex gap-2 shrink-0">
+  <div className="flex items-center gap-4 min-w-0">
+    <img
+      src={getMediaUrl(prop.thumbnail_url)}
+      alt={prop.title}
+      className="w-24 h-20 rounded-xl object-cover border bg-slate-50 shrink-0"
+    />
+
+    <div className="min-w-0">
+      <h3 className="font-bold text-slate-800 truncate">{prop.title}</h3>
+      <p className="text-xs text-slate-400">{prop.address}, {prop.city}</p>
+      <p className="text-sm font-semibold text-emerald-600 mt-1">{prop.price} BDT</p>
+      <p className="text-xs text-slate-400 mt-2">Owner: {prop.owner_name} (ID: {prop.owner_id})</p>
+    </div>
+  </div>
+
+  <div className="flex gap-2 shrink-0">
+                    <Link
+                      to={`/properties/${prop.id}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center justify-center px-3 py-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-bold"
+                    >
+                      <Eye className="w-4 h-4 mr-1" />
+                      Review
+                    </Link>
                     <Button 
                       variant="primary" 
                       size="sm" 
@@ -231,10 +268,11 @@ const AdminDashboard = () => {
               {verificationsRes.data.map((req) => (
                 <div key={req.id} className="bg-white border rounded-2xl p-6 shadow-sm flex justify-between items-center gap-6">
                   <div className="space-y-1">
-                    <p className="text-sm font-bold text-slate-800">User ID: {req.user_id}</p>
-                    <p className="text-xs text-slate-400 uppercase font-bold">Doc Type: {req.document_type}</p>
+                    <p className="text-sm font-bold text-slate-800">{req.full_name || req.email || `User ID: ${req.user_id}`}</p>
+                    <p className="text-xs text-slate-500 capitalize font-bold">Role: {req.role}</p>
+                    <p className="text-xs text-slate-400 uppercase font-bold">Doc Type: {VERIFICATION_DOCUMENT_LABELS[req.document_type] || req.document_type}</p>
                     <a 
-                      href={`http://localhost:5000${req.document_url}`} 
+                      href={getMediaUrl(req.document_url)} 
                       target="_blank" 
                       rel="noreferrer"
                       className="inline-flex items-center text-xs font-semibold text-emerald-600 hover:underline"

@@ -17,6 +17,8 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import PropertyDetail from './pages/PropertyDetail';
+import Profile from './pages/Profile';
+import PublicProfile from './pages/PublicProfile';
 
 // Dashboards
 import TenantDashboard from './pages/tenant/TenantDashboard';
@@ -47,6 +49,16 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/properties/:id" element={<PropertyDetail />} />
+                <Route 
+                  path="/profile" 
+                  element={
+                    <ProtectedRoute>
+                      <Profile />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route path="/profile/:id" element={<PublicProfile />} />
+                <Route path="/users/:id/profile" element={<PublicProfile />} />
               </Route>
 
               {/* Tenant Dashboard (Protected & Role Restrained) */}

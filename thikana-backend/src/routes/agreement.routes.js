@@ -10,6 +10,13 @@ const { ROLES } = require('../configs/constants');
 // All agreement routes require authentication
 router.use(auth);
 
+// Landlord/Agency can fetch selectable property + tenant pairs for agreement creation
+router.get(
+  '/candidates',
+  authorize(ROLES.OWNER, ROLES.AGENCY),
+  AgreementController.listCandidates.bind(AgreementController)
+);
+
 // Landlord/Agency drafts agreement
 router.post(
   '/',

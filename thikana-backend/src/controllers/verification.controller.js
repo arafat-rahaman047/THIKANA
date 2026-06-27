@@ -14,8 +14,9 @@ class VerificationController {
   async submit(req, res, next) {
     try {
       const userId = req.user.id;
+      const userRole = req.user.role;
       const file = req.file;
-      const request = await verificationService.submitRequest(userId, req.body, file);
+      const request = await verificationService.submitRequest(userId, userRole, req.body, file);
       
       return response.success(
         res,

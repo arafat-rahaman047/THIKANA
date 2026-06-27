@@ -1,19 +1,43 @@
 const VerificationRepository = require('../repositories/verification.repository');
 const AppError = require('../utils/appError');
-const { HTTP_STATUS } = require('../configs/constants');
+const { HTTP_STATUS, ROLES } = require('../configs/constants');
 
 const verificationRepository = new VerificationRepository();
+
+const DOCUMENT_RULES_BY_ROLE = {
+  [ROLES.TENANT]: {
+    allowed: ['nid', 'student_id'],
+    label: 'Tenant verification requires National ID (NID) or Student ID.'
+  },
+  [ROLES.OWNER]: {
+    allowed: ['property_deed', 'mutation_certificate', 'tax_receipt', 'utility_bill'],
+    label: 'Owner verification requires a property-related paper such as ownership deed, mutation certificate, tax receipt, or utility bill.'
+  },
+  [ROLES.AGENCY]: {
+    allowed: ['trade_license'],
+    label: 'Agency verification requires Trade License.'
+  }
+};
 
 class VerificationService {
   /**
    * Submit a new verification request with document upload
    */
-  async submitRequest(userId, payload, file) {
+  async submitRequest(userId, userRole, payload, file) {
     if (!file) {
       throw new AppError('Verification document file is required', HTTP_STATUS.BAD_REQUEST);
     }
 
     const { documentType } = payload;
+    const rule = DOCUMENT_RULES_BY_ROLE[userRole];
+
+    if (!rule) {
+      throw new AppError('This user role is not allowed to submit verification documents', HTTP_STATUS.FORBIDDEN);
+    }
+
+    if (!rule.allowed.includes(documentType)) {
+      throw new AppError(rule.label, HTTP_STATUS.BAD_REQUEST);
+    }
 
     // 1. Check if user already has a verification request
     const existing = await verificationRepository.findOne({ user_id: userId });

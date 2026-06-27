@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { 
   Heart, MessageSquare, FileText, CreditCard, ShieldCheck, 
   Send, ShieldAlert, Check, Clock, Upload, X, Shield 
@@ -9,7 +9,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout';
 import PropertyCard from '../../components/property/PropertyCard';
 import Button from '../../components/common/Button';
 import { useNotification } from '../../context/NotificationContext';
-
+import useAuth from '../../hooks/useAuth';
 import { getFavorites } from '../../services/favoritesService';
 import { listConversations, getMessages, sendMessage } from '../../services/messageService';
 import { listAgreements, updateAgreementStatus } from '../../services/agreementService';
@@ -20,6 +20,7 @@ const TenantDashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'favorites';
   const { showNotification } = useNotification();
+  const {user} = useAuth();
   const queryClient = useQueryClient();
 
   // Chat State
@@ -43,6 +44,8 @@ const TenantDashboard = () => {
     setSearchParams({ tab: tabId });
   };
 
+  const chatParam = searchParams.get('chat');
+
   // Queries
   const { data: favoritesRes, isLoading: favsLoading } = useQuery({
     queryKey: ['tenant-favorites'],
@@ -51,15 +54,15 @@ const TenantDashboard = () => {
   });
 
   const { data: chatsRes, isLoading: chatsLoading } = useQuery({
-    queryKey: ['conversations'],
+    queryKey: ['conversations', user?.id],
     queryFn: listConversations,
-    enabled: activeTab === 'messages'
+    enabled: activeTab === 'messages' && !!user?.id
   });
 
   const { data: messagesRes, refetch: refetchMessages } = useQuery({
-    queryKey: ['messages', selectedChat],
+    queryKey: ['messages', selectedChat, user?.id],
     queryFn: () => getMessages(selectedChat),
-    enabled: activeTab === 'messages' && !!selectedChat,
+    enabled: activeTab === 'messages' && !!selectedChat && !!user?.id,
     refetchInterval: 3000 // Poll messages every 3s
   });
 
@@ -81,12 +84,27 @@ const TenantDashboard = () => {
     enabled: activeTab === 'verification'
   });
 
+  const conversations = chatsRes?.data || [];
+  const selectedConversation = conversations.find((chat) => String(chat.conversation_id) === String(selectedChat));
+
+  useEffect(() => {
+    if (activeTab !== 'messages' || !chatParam || conversations.length === 0) {
+      return;
+    }
+
+    const chatExists = conversations.some((chat) => String(chat.conversation_id) === String(chatParam));
+    if (chatExists && String(selectedChat) !== String(chatParam)) {
+      setSelectedChat(Number(chatParam));
+    }
+  }, [activeTab, chatParam, conversations, selectedChat]);
+
   // Mutations
   const sendMessageMutation = useMutation({
     mutationFn: () => sendMessage(selectedChat, chatText),
     onSuccess: () => {
       setChatText('');
       refetchMessages();
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
     },
     onError: (err) => {
       showNotification(err.message || 'Failed to send message', 'error');
@@ -109,7 +127,7 @@ const TenantDashboard = () => {
     onSuccess: () => {
       setSelectedFile(null);
       refetchVerification();
-      showNotification('Verification documents uploaded successfully', 'success');
+      showNotification('Tenant verification document uploaded successfully', 'success');
     },
     onError: (err) => {
       showNotification(err.message || 'Failed to submit verification request', 'error');
@@ -217,9 +235,9 @@ const TenantDashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {favoritesRes.data.map((fav) => (
                 <PropertyCard
-                  key={fav.id}
+                  key={fav.favourite_id}
                   property={{
-                    id: fav.property_id,
+                    id: fav.id,
                     title: fav.title,
                     price: fav.price,
                     bedrooms: fav.bedrooms,
@@ -252,22 +270,22 @@ const TenantDashboard = () => {
               ) : !chatsRes?.data || chatsRes.data.length === 0 ? (
                 <div className="p-8 text-center text-sm text-slate-400">No active conversations.</div>
               ) : (
-                chatsRes.data.map((chat) => (
+                conversations.map((chat) => (
                   <button
-                    key={chat.id}
-                    onClick={() => setSelectedChat(chat.id)}
+                    key={chat.conversation_id}
+                    onClick={() => setSelectedChat(chat.conversation_id)}
                     className={`w-full text-left p-4 hover:bg-slate-50 transition-colors flex items-center gap-3 ${
-                      selectedChat === chat.id ? 'bg-emerald-50/50 border-l-4 border-emerald-500' : ''
+                      selectedChat === chat.conversation_id ? 'bg-emerald-50/50 border-l-4 border-emerald-500' : ''
                     }`}
                   >
                     <img
-                      src={`https://api.dicebear.com/7.x/identicon/svg?seed=${chat.partner_name}`}
+                      src={`https://api.dicebear.com/7.x/identicon/svg?seed=${chat.other_user_name || chat.other_user_email}`}
                       alt=""
                       className="w-10 h-10 rounded-full border bg-slate-100 object-cover shrink-0"
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex justify-between items-baseline mb-0.5">
-                        <p className="text-sm font-bold text-slate-800 truncate">{chat.partner_name}</p>
+                        <p className="text-sm font-bold text-slate-800 truncate">{chat.other_user_name || chat.other_user_email || 'Unknown user'}</p>
                         <p className="text-[10px] text-slate-400 shrink-0">
                           {chat.last_message_time ? new Date(chat.last_message_time).toLocaleDateString() : ''}
                         </p>
@@ -275,7 +293,7 @@ const TenantDashboard = () => {
                       <p className="text-xs text-slate-400 truncate font-semibold mb-0.5">
                         Prop ID: {chat.property_title || chat.property_id}
                       </p>
-                      <p className="text-xs text-slate-500 truncate">{chat.last_message || 'No messages yet'}</p>
+                      <p className="text-xs text-slate-500 truncate">{chat.last_message_text || 'No messages yet'}</p>
                     </div>
                   </button>
                 ))
@@ -290,18 +308,28 @@ const TenantDashboard = () => {
                 {/* Chat Partner Header */}
                 <div className="p-4 bg-white border-b border-slate-100 flex items-center gap-3 shadow-sm">
                   <div className="font-bold text-slate-800">
-                    Conversation Details
+                    {selectedConversation?.other_user_id ? (
+                      <Link to={`/users/${selectedConversation.other_user_id}/profile`} className="hover:text-emerald-600 transition-colors font-extrabold text-sm sm:text-base">
+                        {selectedConversation?.other_user_name || selectedConversation?.other_user_email || 'Conversation Details'}
+                      </Link>
+                    ) : (
+                      selectedConversation?.other_user_name || selectedConversation?.other_user_email || 'Conversation Details'
+                    )}
+                    {selectedConversation?.property_title && (
+                      <p className="text-xs text-slate-400 font-semibold mt-0.5">
+                        {selectedConversation.property_title}
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 {/* Messages List */}
                 <div className="flex-1 p-4 overflow-y-auto space-y-3 flex flex-col">
                   {messagesRes?.data?.map((msg) => {
-                    const isMe = msg.sender_id === msg.partner_id; // Check based on response details
-                    const msgIsMe = msg.sender_id === msg.user_id || msg.sender_role === 'tenant';
+                    const msgIsMe = msg.sender_id === user?.id;
                     return (
                       <div
-                        key={msg.id}
+                        key={msg.message_id}
                         className={`max-w-[70%] p-3 rounded-2xl text-sm ${
                           msgIsMe
                             ? 'bg-emerald-600 text-white rounded-br-none self-end'
@@ -366,6 +394,16 @@ const TenantDashboard = () => {
                       </span>
                     </div>
                     <p className="text-sm font-bold text-slate-700">{ag.property_title || `Property ID: ${ag.property_id}`}</p>
+                    <p className="text-xs text-slate-500 font-semibold">
+                      Landlord:{' '}
+                      {ag.owner_id ? (
+                        <Link to={`/users/${ag.owner_id}/profile`} className="text-emerald-600 hover:text-emerald-700 font-bold">
+                          {ag.owner_name || 'View Profile'}
+                        </Link>
+                      ) : (
+                        ag.owner_name || 'N/A'
+                      )}
+                    </p>
                     <p className="text-xs text-slate-400">
                       Duration: {new Date(ag.start_date).toLocaleDateString()} to {new Date(ag.end_date).toLocaleDateString()}
                     </p>
@@ -379,7 +417,7 @@ const TenantDashboard = () => {
                       </p>
                     )}
                   </div>
-                  {ag.status === 'pending' && (
+                  {ag.status === 'sent' && (
                     <div className="flex gap-2 shrink-0 self-end md:self-auto">
                       <Button
                         variant="primary"
@@ -429,6 +467,17 @@ const TenantDashboard = () => {
                         {invoice.status}
                       </span>
                     </div>
+                    <p className="text-sm font-bold text-slate-700">{invoice.property_title}</p>
+                    <p className="text-xs text-slate-500 font-semibold">
+                      Landlord:{' '}
+                      {invoice.owner_id ? (
+                        <Link to={`/users/${invoice.owner_id}/profile`} className="text-emerald-600 hover:text-emerald-700 font-bold">
+                          {invoice.owner_name || 'View Profile'}
+                        </Link>
+                      ) : (
+                        invoice.owner_name || 'N/A'
+                      )}
+                    </p>
                     <p className="text-sm font-extrabold text-slate-700">{invoice.amount} BDT</p>
                     <p className="text-xs text-slate-400">Due Date: {new Date(invoice.due_date).toLocaleDateString()}</p>
                     {invoice.payment_method && (
@@ -457,15 +506,17 @@ const TenantDashboard = () => {
           <h2 className="text-xl font-bold text-slate-800">Document Verification</h2>
           
           {/* Status Panel */}
-          {verificationRes?.data ? (
+          {verificationRes?.data && verificationRes.data.status !== 'unverified' ? (
             <div className={`p-4 rounded-xl border flex items-start gap-3 ${
               verificationRes.data.status === 'approved' ? 'bg-emerald-50 border-emerald-100 text-emerald-800' :
-              verificationRes.data.status === 'rejected' ? 'bg-red-50 border-red-100 text-red-800' : 'bg-amber-50 border-amber-100 text-amber-850'
+              verificationRes.data.status === 'rejected' ? 'bg-red-50 border-red-100 text-red-800' : 'bg-amber-50 border-amber-100 text-amber-800'
             }`}>
               <Shield className="w-5 h-5 mt-0.5 shrink-0" />
               <div>
                 <h4 className="font-extrabold text-sm capitalize">Verification Status: {verificationRes.data.status}</h4>
-                <p className="text-xs mt-1">Submitted: {new Date(verificationRes.data.created_at).toLocaleDateString()}</p>
+                {verificationRes.data.created_at && (
+                  <p className="text-xs mt-1">Submitted: {new Date(verificationRes.data.created_at).toLocaleDateString()}</p>
+                )}
                 {verificationRes.data.rejection_reason && (
                   <p className="text-xs mt-2 bg-white/70 p-2 rounded border border-red-100 font-semibold italic">
                     Reason for rejection: {verificationRes.data.rejection_reason}
@@ -476,15 +527,15 @@ const TenantDashboard = () => {
           ) : (
             <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl text-slate-500 text-xs flex items-center gap-2">
               <Clock className="w-4 h-4 text-emerald-500" />
-              <span>You haven't submitted verification documents yet. Upload your National ID card to verify your identity.</span>
+              <span>You haven't submitted tenant verification documents yet. Upload your National ID (NID) or Student ID to verify your identity.</span>
             </div>
           )}
 
           {/* Upload Form */}
-          {(!verificationRes?.data || verificationRes.data.status === 'rejected') && (
+          {(!verificationRes?.data || ['unverified', 'rejected'].includes(verificationRes.data.status)) && (
             <form onSubmit={handleVerificationSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-400 uppercase">Document Type</label>
+                <label className="block text-xs font-bold text-slate-400 uppercase">Tenant Document Type</label>
                 <select
                   value={docType}
                   onChange={(e) => setDocType(e.target.value)}
@@ -497,7 +548,7 @@ const TenantDashboard = () => {
 
               {/* Drag and Drop */}
               <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-400 uppercase">Upload Document File (PDF/Image)</label>
+                <label className="block text-xs font-bold text-slate-400 uppercase">Upload NID / Student ID File (PDF/Image)</label>
                 <div className="border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center hover:bg-slate-50 transition-colors relative cursor-pointer">
                   <input
                     type="file"
@@ -526,7 +577,7 @@ const TenantDashboard = () => {
                 loading={submitVerificationMutation.isPending}
                 className="py-2.5 px-6 rounded-xl font-bold"
               >
-                Submit Documents
+                Submit Tenant Verification
               </Button>
             </form>
           )}

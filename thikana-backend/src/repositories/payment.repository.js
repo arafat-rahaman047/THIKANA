@@ -16,6 +16,7 @@ class PaymentRepository extends BaseRepository {
     const sql = `
       SELECT pm.*, 
              p.id as property_id, p.title as property_title, p.address as property_address, p.city as property_city,
+             pm.tenant_id, ra.owner_id,
              tp.full_name as tenant_name,
              op.full_name as owner_name
       FROM payments pm
@@ -37,8 +38,9 @@ class PaymentRepository extends BaseRepository {
    */
   async findByUserId(userId) {
     const sql = `
-      SELECT pm.id, pm.agreement_id, pm.amount, pm.payment_date, pm.due_date, pm.payment_method, pm.transaction_id, pm.status, pm.created_at,
+      SELECT pm.id, pm.agreement_id, pm.amount, pm.payment_date, pm.due_date, pm.payment_method, pm.transaction_id, pm.status, pm.created_at, pm.updated_at,
              p.id as property_id, p.title as property_title, p.city as property_city,
+             pm.tenant_id, ra.owner_id,
              tp.full_name as tenant_name,
              op.full_name as owner_name
       FROM payments pm

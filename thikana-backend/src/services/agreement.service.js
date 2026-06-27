@@ -10,6 +10,14 @@ const userRepository = new UserRepository();
 
 class AgreementService {
   /**
+   * Return valid tenant/property pairs from conversations for agreement creation.
+   * Owner/agency can select from this list instead of manually typing IDs.
+   */
+  async getAgreementCandidates(ownerId) {
+    return await agreementRepository.findAgreementCandidatesByOwnerId(ownerId);
+  }
+
+  /**
    * Draft a new rental agreement (Restricted to owner/agency)
    */
   async createAgreement(ownerId, payload) {
@@ -32,10 +40,28 @@ class AgreementService {
     }
 
     if (tenant.role !== ROLES.TENANT) {
-      throw new AppError('The specified user is not registered as a tenant', HTTP_STATUS.BAD_REQUEST);
+      throw new AppError('The selected user is not registered as a tenant', HTTP_STATUS.BAD_REQUEST);
     }
 
-    // 3. Create agreement
+    // 3. Verify this tenant actually contacted the owner/agency for this property
+    const hasConversation = await agreementRepository.hasConversation(propertyId, tenantId, ownerId);
+    if (!hasConversation) {
+      throw new AppError(
+        'Please create agreements only from tenant conversations for your property.',
+        HTTP_STATUS.BAD_REQUEST
+      );
+    }
+
+    // 4. Prevent duplicate open agreements for the same property + tenant
+    const existingAgreement = await agreementRepository.findExistingActiveAgreement(propertyId, tenantId, ownerId);
+    if (existingAgreement) {
+      throw new AppError(
+        'An active agreement already exists for this tenant and property.',
+        HTTP_STATUS.CONFLICT
+      );
+    }
+
+    // 5. Create agreement
     const id = await agreementRepository.create({
       property_id: propertyId,
       tenant_id: tenantId,

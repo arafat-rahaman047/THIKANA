@@ -1,11 +1,26 @@
 const Joi = require('joi');
 
+const ALLOWED_VERIFICATION_DOCUMENT_TYPES = [
+  // Tenant documents
+  'nid',
+  'student_id',
+
+  // Owner property documents
+  'property_deed',
+  'mutation_certificate',
+  'tax_receipt',
+  'utility_bill',
+
+  // Agency document
+  'trade_license'
+];
+
 const submitVerificationSchema = Joi.object({
   documentType: Joi.string()
-    .valid('nid', 'student_id', 'trade_license')
+    .valid(...ALLOWED_VERIFICATION_DOCUMENT_TYPES)
     .required()
     .messages({
-      'any.only': 'Document type must be nid, student_id, or trade_license',
+      'any.only': 'Invalid document type for verification',
       'any.required': 'Document type is required'
     })
 });
@@ -23,5 +38,6 @@ const adminRejectSchema = Joi.object({
 
 module.exports = {
   submitVerificationSchema,
-  adminRejectSchema
+  adminRejectSchema,
+  ALLOWED_VERIFICATION_DOCUMENT_TYPES
 };

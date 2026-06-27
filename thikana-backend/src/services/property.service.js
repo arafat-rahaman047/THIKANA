@@ -71,10 +71,14 @@ class PropertyService {
     // Filter fields to only update allowed properties
     const propertyData = {};
     const allowedFields = [
-      'typeId', 'zoneId', 'title', 'description', 'price', 'bedrooms',
-      'bathrooms', 'areaSqft', 'address', 'city', 'latitude', 'longitude',
-      'listingType', 'isFurnished', 'status'
-    ];
+  'typeId', 'zoneId', 'title', 'description', 'price', 'bedrooms',
+  'bathrooms', 'areaSqft', 'address', 'city', 'latitude', 'longitude',
+  'listingType', 'isFurnished'
+];
+
+if (userRole === ROLES.ADMIN) {
+  allowedFields.push('status');
+}
 
     allowedFields.forEach(field => {
       if (propertyFields[field] !== undefined) {
@@ -132,15 +136,36 @@ class PropertyService {
   /**
    * Search and filter properties with pagination
    */
-  async getProperties(queryFilters) {
+  async getProperties(queryFilters, userId = null, userRole = null) {
     const page = parseInt(queryFilters.page, 10) || 1;
     const limit = parseInt(queryFilters.limit, 10) || 10;
     const offset = (page - 1) * limit;
 
     // Construct filter criteria
-    const filters = {
-      status: queryFilters.status || 'active', // default is public active properties
-      ownerId: queryFilters.ownerId ? parseInt(queryFilters.ownerId, 10) : undefined,
+    const ownerId = queryFilters.ownerId ? parseInt(queryFilters.ownerId, 10) : undefined;
+
+// Public users can only see active listings.
+// Admin can filter any status.
+// Owners/agencies can see all statuses only for their own listings.
+let status = 'active';
+
+if (queryFilters.status === 'all') {
+  if (userRole === ROLES.ADMIN || (ownerId && Number(ownerId) === Number(userId))) {
+    status = 'all';
+  }
+} else if (queryFilters.status) {
+  const isPublicStatus = queryFilters.status === 'active';
+  const isOwnListingFilter = ownerId && Number(ownerId) === Number(userId);
+
+  if (isPublicStatus || userRole === ROLES.ADMIN || isOwnListingFilter) {
+    status = queryFilters.status;
+  }
+}
+
+// Construct filter criteria
+const filters = {
+  status,
+  ownerId,
       search: queryFilters.search || undefined,
       city: queryFilters.city || undefined,
       zoneId: queryFilters.zoneId ? parseInt(queryFilters.zoneId, 10) : undefined,

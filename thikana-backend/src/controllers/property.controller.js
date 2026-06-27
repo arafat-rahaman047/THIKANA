@@ -127,7 +127,21 @@ class PropertyController {
    */
   async list(req, res, next) {
     try {
-      const result = await propertyService.getProperties(req.query);
+      let userId = null;
+let userRole = null;
+const authHeader = req.headers.authorization;
+
+if (authHeader && authHeader.startsWith('Bearer ')) {
+  const token = authHeader.split(' ')[1];
+  const decoded = verifyAccessToken(token);
+
+  if (decoded) {
+    userId = decoded.id;
+    userRole = decoded.role;
+  }
+}
+
+const result = await propertyService.getProperties(req.query, userId, userRole);
       return response.success(
         res,
         'Properties retrieved successfully.',

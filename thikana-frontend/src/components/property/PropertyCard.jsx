@@ -1,3 +1,4 @@
+import { getMediaUrl, FALLBACK_PROPERTY_IMAGE } from '../../utils/mediaUrl';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Heart, Eye, MapPin, Bed, Bath, Maximize } from 'lucide-react';
@@ -61,12 +62,7 @@ const PropertyCard = ({ property, isFavoritedInitially = false, onFavoriteToggle
   };
 
   // Fallback beautiful image if no thumbnail
-  const imageSrc = property.thumbnail_url
-    ? property.thumbnail_url.startsWith('http')
-      ? property.thumbnail_url
-      : `http://localhost:5000${property.thumbnail_url}`
-    : 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80';
-
+ const imageSrc = getMediaUrl(property.thumbnail_url, FALLBACK_PROPERTY_IMAGE);
   return (
     <div className="group bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col h-full relative">
       {/* Property Image & Badge */}

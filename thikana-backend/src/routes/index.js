@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authRoutes = require('./auth.routes');
+const userRoutes = require('./user.routes');
 const propertyRoutes = require('./property.routes');
 const favoritesRoutes = require('./favorites.routes');
 const messageRoutes = require('./message.routes');
@@ -28,6 +29,7 @@ router.get('/health', (req, res) => {
 
 // Apply sub-routes namespace
 router.use('/auth', authRoutes);
+router.use('/users', userRoutes);
 router.use('/properties', propertyRoutes);
 router.use('/favorites', favoritesRoutes);
 router.use('/conversations', messageRoutes);

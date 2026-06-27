@@ -20,6 +20,27 @@ class AgreementController {
     });
   }
 
+
+  /**
+   * List valid property + tenant pairs for drafting agreements.
+   * This lets owners/agencies select from conversations instead of typing IDs manually.
+   */
+  async listCandidates(req, res, next) {
+    try {
+      const ownerId = req.user.id;
+      const candidates = await agreementService.getAgreementCandidates(ownerId);
+      return response.success(
+        res,
+        'Agreement candidates retrieved.',
+        candidates,
+        null,
+        HTTP_STATUS.OK
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
   /**
    * Draft rental agreement
    */

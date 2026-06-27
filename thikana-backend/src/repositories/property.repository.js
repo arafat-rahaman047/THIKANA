@@ -133,12 +133,14 @@ class PropertyRepository extends BaseRepository {
     const params = [];
 
     // Filter by status (public view only sees 'active', owner/admin can see others)
-    if (filters.status) {
-      clauses.push('p.status = ?');
-      params.push(filters.status);
-    } else {
-      clauses.push('p.status = "active"');
-    }
+// Filter by status. 'all' means no status filter.
+// Service layer must authorize before passing 'all'.
+if (filters.status && filters.status !== 'all') {
+  clauses.push('p.status = ?');
+  params.push(filters.status);
+} else if (filters.status !== 'all') {
+  clauses.push('p.status = "active"');
+}
 
     // Filter by owner ID (e.g. owner viewing their own listings)
     if (filters.ownerId) {

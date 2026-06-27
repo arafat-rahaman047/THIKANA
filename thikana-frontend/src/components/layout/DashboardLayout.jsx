@@ -1,17 +1,24 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LogOut, Home, ShieldCheck, AlertCircle, Menu, X, ArrowLeft } from 'lucide-react';
+import { LogOut, Home, ShieldCheck, AlertCircle, Menu, X, ArrowLeft, User } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 
 const DashboardLayout = ({ title, tabs = [], activeTab, setActiveTab, children }) => {
   const { user, logout } = useAuth();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/');
-  };
+  await logout();
+  navigate('/login');
+};
+  const openLogoutModal = (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  setSidebarOpen(false);
+  setShowLogoutModal(true);
+};
 
   const getRoleLabel = () => {
     if (!user) return '';
@@ -22,7 +29,16 @@ const DashboardLayout = ({ title, tabs = [], activeTab, setActiveTab, children }
     return 'Tenant Account';
   };
 
-  const userAvatar = user?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user?.full_name || 'U')}`;
+  const getDisplayName = () => {
+    if (!user) return '';
+    const role = user.role?.toLowerCase();
+    if (role === 'agency') {
+      return user.company_name || user.email || user.phone || '';
+    }
+    return user.full_name || user.email || user.phone || '';
+  };
+
+  const userAvatar = user?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(getDisplayName() || 'U')}`;
   const isVerified = user?.is_verified === 1 || user?.is_verified === true;
 
   const renderSidebarContent = () => (
@@ -46,7 +62,7 @@ const DashboardLayout = ({ title, tabs = [], activeTab, setActiveTab, children }
             className="w-12 h-12 rounded-full border border-slate-700 object-cover shrink-0"
           />
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold text-white truncate">{user?.full_name}</p>
+            <p className="text-sm font-bold text-white truncate">{getDisplayName()}</p>
             <p className="text-xs text-slate-400 truncate mb-1">{getRoleLabel()}</p>
             
             {/* Verification Status Badge */}
@@ -93,6 +109,13 @@ const DashboardLayout = ({ title, tabs = [], activeTab, setActiveTab, children }
       {/* Sidebar Footer */}
       <div className="p-4 border-t border-slate-800 flex flex-col gap-2">
         <Link
+          to="/profile"
+          className="flex w-full items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-xl text-slate-400 hover:bg-slate-800/60 hover:text-white transition-all"
+        >
+          <User className="w-5 h-5" />
+          My Profile
+        </Link>
+        <Link
           to="/"
           className="flex w-full items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-xl text-slate-400 hover:bg-slate-800/60 hover:text-white transition-all"
         >
@@ -100,12 +123,13 @@ const DashboardLayout = ({ title, tabs = [], activeTab, setActiveTab, children }
           Back to Home
         </Link>
         <button
-          onClick={handleLogout}
-          className="flex w-full items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-xl text-red-400 hover:bg-red-950/30 hover:text-red-300 transition-all"
-        >
-          <LogOut className="w-5 h-5" />
-          Log Out
-        </button>
+  type="button"
+  onClick={openLogoutModal}
+  className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl text-red-400 hover:bg-red-950/30 hover:text-red-300 transition-all"
+>
+  <LogOut className="w-5 h-5" />
+  Log Out
+</button>
       </div>
     </div>
   );
@@ -162,11 +186,73 @@ const DashboardLayout = ({ title, tabs = [], activeTab, setActiveTab, children }
           </div>
         </header>
 
-        {/* Dashboard Content Outlet */}
-        <main className="flex-1 p-6 md:p-8 overflow-y-auto max-w-7xl w-full mx-auto">
+                {/* Dashboard Content Outlet */}
+                <main className="flex-1 p-6 md:p-8 overflow-y-auto max-w-7xl w-full mx-auto">
+          {(() => {
+            if (!user) return null;
+            const role = user.role?.toLowerCase();
+            const isIncomplete =
+              ((role === 'tenant' || role === 'owner') && !user.full_name) ||
+              (role === 'agency' && !user.company_name);
+            if (!isIncomplete) return null;
+            return (
+              <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-sm">
+                <div className="flex items-center gap-2.5">
+                  <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 animate-bounce" />
+                  <span className="text-sm font-semibold">
+                    Please complete your profile to unlock all features of the platform.
+                  </span>
+                </div>
+                <Link
+                  to="/profile"
+                  className="text-xs font-extrabold text-white bg-amber-600 hover:bg-amber-700 px-3.5 py-2 rounded-lg transition-colors text-center shrink-0 self-start sm:self-auto shadow-sm animate-pulse"
+                >
+                  Complete Profile
+                </Link>
+              </div>
+            );
+          })()}
           {children}
         </main>
       </div>
+
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 border border-slate-100">
+            <div className="text-center space-y-3">
+              <div className="w-14 h-14 mx-auto rounded-full bg-red-50 flex items-center justify-center">
+                <LogOut className="w-7 h-7 text-red-500" />
+              </div>
+
+              <h3 className="text-lg font-extrabold text-slate-800">
+                Confirm Logout
+              </h3>
+
+              <p className="text-sm text-slate-500">
+                Are you sure you want to log out from your THIKANA account?
+              </p>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setShowLogoutModal(false)}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-colors"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-red-500 text-white font-bold hover:bg-red-600 transition-colors"
+              >
+                Yes, Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
